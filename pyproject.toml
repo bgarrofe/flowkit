@@ -1,0 +1,59 @@
+[tool.poetry]
+name = "flowkit"
+version = "0.1.0"
+description = "A lightweight Python orchestrator - minimalist, decorator-based workflow system inspired by Prefect"
+authors = ["Bruno Garrofe <bruno.garrofe@gmail.com>"]
+readme = "README.md"
+license = "MIT"
+homepage = "https://github.com/bgarrofe/flowkit"
+repository = "https://github.com/bgarrofe/flowkit"
+keywords = ["workflow", "orchestration", "dag", "pipeline", "task"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+packages = [{ include = "flowkit" }]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.11.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--cov=flowkit",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+
+[tool.coverage.run]
+source = ["flowkit"]
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
