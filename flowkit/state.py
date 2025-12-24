@@ -2,9 +2,9 @@
 
 import json
 import time
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Callable
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from .logging import get_logger, LogLevel
 
@@ -270,7 +270,7 @@ class TaskCache:
         self,
         state_manager: StateManager,
         ttl: Optional[float] = None,
-        cache_key_func: Optional[callable] = None,
+        cache_key_func: Optional[Callable] = None,
     ):
         """
         Initialize a TaskCache.
@@ -286,7 +286,7 @@ class TaskCache:
         self.cache_key_func = cache_key_func
         self.logger = get_logger()
     
-    def __call__(self, func: callable) -> callable:
+    def __call__(self, func: Callable) -> Callable:
         """
         Wrap a function with caching.
         

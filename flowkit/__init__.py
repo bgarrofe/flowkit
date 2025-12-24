@@ -33,6 +33,7 @@ __version__ = "0.1.0"
 # Core imports
 from flowkit.task import Task, task
 from flowkit.dag import DAG
+from flowkit.flow import Flow
 from flowkit.state import StateManager, TaskCache
 from flowkit.logging import (
     FlowkitLogger,
@@ -55,6 +56,7 @@ __all__ = [
     "Task",
     "task",
     "DAG",
+    "Flow",
     # State management
     "StateManager",
     "TaskCache",

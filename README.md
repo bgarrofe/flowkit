@@ -9,7 +9,7 @@ A lightweight Python orchestrator - minimalist, decorator-based workflow system 
 
 - **Pure Python** - Zero external runtime dependencies
 - **Decorator-based API** - Clean `@task` decorator syntax
-- **Pipeline Operators** - Intuitive `>>` for left-to-right flows
+- **Two Pipeline Styles** - Choose between operator-based (`>>`) or Keras-style Flow API
 - **Automatic DAG** - Tasks auto-register for discovery
 - **Parallel Execution** - Built-in ThreadPool/ProcessPool support
 - **Retry Logic** - Exponential backoff with jitter
@@ -28,6 +28,8 @@ pip install flowkit
 ```
 
 ## Quick Start
+
+### Option 1: DAG API (Operator-based)
 
 ```python
 from flowkit import task, DAG
@@ -54,6 +56,40 @@ extract >> transform >> load
 # Execute
 dag = DAG("my_pipeline")
 results = dag.run()
+print(results)  # {'extract': ..., 'transform': ..., 'load': 'Success'}
+```
+
+### Option 2: Flow API (Keras-style)
+
+```python
+from flowkit import task, Flow
+
+@task(retries=3)
+def extract():
+    """Fetch data from source."""
+    return fetch_data()
+
+@task()
+def transform(extract):  # Parameter name matches task name
+    """Process the data."""
+    return process(extract)
+
+@task()
+def load(transform):
+    """Save to database."""
+    save_to_db(transform)
+    return "Success"
+
+# Build pipeline with chainable API
+pipeline = (
+    Flow("my_pipeline", max_workers=4)
+    .add(extract)
+    .add(transform)
+    .add(load)
+)
+
+# Execute
+results = pipeline.run()
 print(results)  # {'extract': ..., 'transform': ..., 'load': 'Success'}
 ```
 
@@ -114,6 +150,52 @@ from flowkit import DAG
 dag = DAG("my_workflow", max_workers=4)
 results = dag.run(executor="thread")  # or "process"
 ```
+
+### Keras-Style Flow API
+
+For a more intuitive pipeline building experience, use the Flow API:
+
+```python
+from flowkit import task, Flow
+
+@task()
+def fetch_user():
+    return {"id": 1, "name": "Alice"}
+
+@task()
+def fetch_orders():
+    return ["order1", "order2"]
+
+@task()
+def fetch_recommendations():
+    return ["item1", "item2"]
+
+@task()
+def combine(fetch_user, fetch_orders, fetch_recommendations):
+    return {
+        "user": fetch_user,
+        "orders": fetch_orders,
+        "recommendations": fetch_recommendations
+    }
+
+# Build pipeline with method chaining
+pipeline = (
+    Flow("user_pipeline", max_workers=5)
+    .add(fetch_user)                                    # Start
+    .branch(fetch_orders, fetch_recommendations)        # Parallel branches
+    .merge(combine)                                     # Merge results
+)
+
+results = pipeline.run()
+```
+
+**Key Features:**
+- `.add(task)` - Add sequential task
+- `.branch(task1, task2, ...)` - Create parallel branches
+- `.merge(task)` - Merge all branches into one task
+- Automatic parameter injection based on task names
+
+See [Flow API Documentation](docs/FLOW_API.md) for detailed usage.
 
 ## Advanced Features
 
@@ -398,6 +480,25 @@ class DAG:
     """Directed Acyclic Graph runner for executing task workflows."""
     
     def __init__(self, name: str = "workflow", max_workers: Optional[int] = None)
+    
+    def run(self, executor: str = "thread") -> Dict[str, Any]
+    
+    def visualize(self) -> str
+```
+
+### Flow
+
+```python
+class Flow:
+    """Keras-style flow builder for creating pipelines."""
+    
+    def __init__(self, name: str = "flow", max_workers: Optional[int] = None)
+    
+    def add(self, task: Task) -> 'Flow'
+    
+    def branch(self, *branch_tasks: Task) -> 'Flow'
+    
+    def merge(self, merge_task: Task) -> 'Flow'
     
     def run(self, executor: str = "thread") -> Dict[str, Any]
     
