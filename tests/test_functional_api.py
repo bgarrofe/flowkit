@@ -282,6 +282,69 @@ def test_visualize():
     assert "Outputs:" in viz
 
 
+def test_summary():
+    """Test flow summary display."""
+    @task()
+    def fetch_user():
+        return {'id': 1, 'name': 'Alice'}
+
+    @task(retries=2)
+    def fetch_orders():
+        return [{'id': 1, 'amount': 100}]
+
+    @task(when=lambda x: x is not None)
+    def fetch_premium_features(user):
+        return ['premium_feature_1']
+
+    @task(retries=1)
+    def build_profile(user, orders):
+        return {'user': user, 'orders': orders}
+
+    @task()
+    def final_output(profile, premium_features):
+        return {'profile': profile, 'premium': premium_features}
+
+    # Build functional graph - connect all tasks to output
+    user_layer = Layer(fetch_user)()
+    orders_layer = Layer(fetch_orders)()
+    premium_layer = Layer(fetch_premium_features)(user_layer)
+    profile_layer = Layer(build_profile)(user_layer, orders_layer)
+    output_layer = Layer(final_output)(profile_layer, premium_layer)
+
+    flow = FunctionalFlow(
+        inputs=(user_layer, orders_layer),
+        outputs=output_layer,
+        name="test_summary_flow"
+    )
+
+    # Capture summary output
+    import io
+    import sys
+    from contextlib import redirect_stdout
+
+    f = io.StringIO()
+    with redirect_stdout(f):
+        flow.summary()
+    summary_output = f.getvalue()
+
+    # Check key elements are present
+    assert "FunctionalFlow: test_summary_flow" in summary_output
+    assert "Layer (Task)" in summary_output
+    assert "Input From" in summary_output
+    assert "Condition" in summary_output
+    assert "Retries" in summary_output
+    assert "Parallel" in summary_output
+    assert "fetch_user" in summary_output
+    assert "fetch_orders" in summary_output
+    assert "fetch_premium_features" in summary_output
+    assert "build_profile" in summary_output
+    assert "final_output" in summary_output
+    assert "Yes" in summary_output  # condition present
+    assert "Total tasks: 5" in summary_output
+    assert "Input tasks: 2" in summary_output
+    assert "Output tasks: 1" in summary_output
+
+
 def test_empty_flow():
     """Test empty flow behavior."""
     @task()

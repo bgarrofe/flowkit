@@ -327,6 +327,7 @@ class FunctionalFlow:
   - `executor`: "thread" or "process"
   - Returns: Single value or tuple of values
 - `visualize()`: Generate text visualization of the graph
+- `summary()`: Print tabular overview of tasks, conditions, retries, and parallel hints
 
 ## Examples
 
@@ -451,7 +452,7 @@ summary_result, detailed_result = flow.run()
 3. **Use type hints**: Help with code clarity and IDE support
 4. **Handle errors in tasks**: Use try-except blocks for robust error handling
 5. **Leverage retries**: Use `@task(retries=N)` for flaky operations
-6. **Visualize complex graphs**: Use `flow.visualize()` to understand structure
+6. **Visualize complex graphs**: Use `flow.visualize()` or `flow.summary()` to understand structure
 7. **Test incrementally**: Build and test small subgraphs before combining
 
 ## Comparison with Sequential Flow API
@@ -483,7 +484,7 @@ summary_result, detailed_result = flow.run()
 
 ### Debugging Tips
 
-1. Use `flow.visualize()` to see the graph structure
+1. Use `flow.visualize()` or `flow.summary()` to see the graph structure
 2. Check task names match function parameter names
 3. Run with `executor="thread"` for easier debugging (process executor can hide errors)
 4. Add print statements in tasks to trace execution order

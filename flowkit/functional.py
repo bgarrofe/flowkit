@@ -1,6 +1,6 @@
 """Keras-style Functional API for building workflows with multiple inputs and outputs."""
 
-from typing import Callable, Union, Tuple, Dict, Any, Optional, List
+from typing import Union, Tuple, Dict, Any, Optional, List
 from collections import defaultdict, deque
 import concurrent.futures
 import inspect
@@ -378,7 +378,73 @@ class FunctionalFlow:
                     return True
         
         return False
-    
+
+    def summary(self) -> None:
+        """
+        Print a Keras-style summary of the functional flow.
+
+        Displays a tabular overview of all tasks in the flow including:
+        - Task names
+        - Input sources
+        - Conditions (when present)
+        - Retry counts
+        - Parallel execution hints
+
+        The tasks are displayed in topological order for clarity.
+        """
+        if not self.all_nodes:
+            print(f"{'='*60}")
+            print(f"FunctionalFlow: {self.name}")
+            print(f"{'='*60}")
+            print("(empty flow)")
+            print(f"{'='*60}")
+            return
+
+        # Build indegree map for topological sorting
+        indegree = {node: len(self.reverse_graph[node]) for node in self.all_nodes}
+
+        # Perform topological sort
+        ordered_nodes = []
+        queue = deque([node for node in self.all_nodes if indegree[node] == 0])
+        while queue:
+            node = queue.popleft()
+            ordered_nodes.append(node)
+            for downstream in self.graph[node]:
+                indegree[downstream] -= 1
+                if indegree[downstream] == 0:
+                    queue.append(downstream)
+
+        print(f"{'='*60}")
+        print(f"FunctionalFlow: {self.name}")
+        print(f"{'='*60}")
+        print(f"{'Layer (Task)':<30} {'Input From':<25} {'Condition':<12} {'Retries':<8} Parallel")
+        print(f"{'-'*60}")
+
+        for node in ordered_nodes:
+            name = node.name
+            inputs = ", ".join(inp.name for inp in node.inputs) if node.inputs else "(input)"
+            condition = "Yes" if node.task.when is not None else ""
+            retries = node.task.retries
+
+            # Parallel hint: multiple inputs OR any input has multiple outputs (branching)
+            parallel_hint = ""
+            if len(node.inputs) > 1:
+                parallel_hint = "↔"
+            else:
+                # Check if any upstream node has multiple downstream connections (branching)
+                for inp in node.inputs:
+                    if len(self.graph[inp]) > 1:
+                        parallel_hint = "↔"
+                        break
+
+            print(f"{name:<30} {inputs:<25} {condition:<12} {retries:<8} {parallel_hint}")
+
+        print(f"{'-'*60}")
+        print(f"Total tasks: {len(ordered_nodes)}")
+        print(f"Input tasks: {len(self.inputs)}")
+        print(f"Output tasks: {len(self.outputs) if isinstance(self.outputs, tuple) else 1}")
+        print(f"{'='*60}")
+
     def visualize(self) -> str:
         """
         Generate a simple text visualization of the functional flow.
@@ -410,11 +476,11 @@ class FunctionalFlow:
             if upstream_names:
                 lines.append(f"  Upstream: {', '.join(upstream_names)}")
             else:
-                lines.append(f"  Upstream: (input)")
+                lines.append("  Upstream: (input)")
             if downstream_names:
                 lines.append(f"  Downstream: {', '.join(downstream_names)}")
             else:
-                lines.append(f"  Downstream: (output)")
+                lines.append("  Downstream: (output)")
         
         return "\n".join(lines)
     
