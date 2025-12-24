@@ -9,7 +9,8 @@ A lightweight Python orchestrator - minimalist, decorator-based workflow system 
 
 - **Pure Python** - Zero external runtime dependencies
 - **Decorator-based API** - Clean `@task` decorator syntax
-- **Two Pipeline Styles** - Choose between operator-based (`>>`) or Keras-style Flow API
+- **Three Pipeline Styles** - Choose between operator-based (`>>`), Keras-style Flow API, or Functional API
+- **Multiple Inputs/Outputs** - Build complex DAGs with multiple entry and exit points
 - **Automatic DAG** - Tasks auto-register for discovery
 - **Parallel Execution** - Built-in ThreadPool/ProcessPool support
 - **Retry Logic** - Exponential backoff with jitter
@@ -91,6 +92,45 @@ pipeline = (
 # Execute
 results = pipeline.run()
 print(results)  # {'extract': ..., 'transform': ..., 'load': 'Success'}
+```
+
+### Option 3: Functional API (Multiple Inputs/Outputs)
+
+```python
+from flowkit import task, Layer, FunctionalFlow
+
+@task()
+def fetch_user():
+    return {"id": 123, "name": "Alice"}
+
+@task()
+def fetch_orders():
+    return ["order1", "order2"]
+
+@task()
+def build_profile(fetch_user, fetch_orders):
+    return {"profile": fetch_user, "orders": fetch_orders}
+
+@task()
+def send_email(build_profile):
+    return f"Email sent to {build_profile['profile']['name']}"
+
+# Build functional graph
+user = Layer(fetch_user)()
+orders = Layer(fetch_orders)()
+profile = Layer(build_profile)(user, orders)
+email = Layer(send_email)(profile)
+
+# Create flow with multiple inputs and single output
+flow = FunctionalFlow(
+    inputs=(user, orders),
+    outputs=email,
+    name="user_pipeline"
+)
+
+# Execute
+result = flow.run()
+print(result)  # "Email sent to Alice"
 ```
 
 ## Core Concepts
@@ -196,6 +236,60 @@ results = pipeline.run()
 - Automatic parameter injection based on task names
 
 See [Flow API Documentation](docs/FLOW_API.md) for detailed usage.
+
+### Functional API (Multiple Inputs/Outputs)
+
+For complex workflows with multiple inputs and outputs, use the Functional API:
+
+```python
+from flowkit import task, Layer, FunctionalFlow
+
+@task()
+def fetch_user():
+    return {"id": 123, "name": "Alice"}
+
+@task()
+def fetch_orders():
+    return ["order1", "order2"]
+
+@task()
+def build_profile(fetch_user, fetch_orders):
+    return {"profile": fetch_user, "orders": fetch_orders}
+
+@task()
+def generate_report(build_profile):
+    return f"Report for {build_profile['profile']['name']}"
+
+@task()
+def send_notification(build_profile):
+    return f"Notification sent to {build_profile['profile']['name']}"
+
+# Wrap tasks as layers
+user = Layer(fetch_user)()
+orders = Layer(fetch_orders)()
+profile = Layer(build_profile)(user, orders)
+report = Layer(generate_report)(profile)
+notification = Layer(send_notification)(profile)
+
+# Create flow with multiple inputs and multiple outputs
+flow = FunctionalFlow(
+    inputs=(user, orders),
+    outputs=(report, notification),
+    name="multi_output_pipeline"
+)
+
+# Run - returns tuple of outputs
+report_result, notification_result = flow.run()
+```
+
+**Key Features:**
+- Multiple input nodes
+- Multiple output nodes
+- Explicit graph construction
+- Keras-like functional API
+- Full parallel execution support
+
+See [Functional API Documentation](docs/FUNCTIONAL_API.md) for detailed usage.
 
 ## Advanced Features
 

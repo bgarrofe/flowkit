@@ -34,6 +34,7 @@ __version__ = "0.1.0"
 from flowkit.task import Task, task
 from flowkit.dag import DAG
 from flowkit.flow import Flow
+from flowkit.functional import Layer, AppliedTask, FunctionalFlow
 from flowkit.state import StateManager, TaskCache
 from flowkit.logging import (
     FlowkitLogger,
@@ -57,6 +58,10 @@ __all__ = [
     "task",
     "DAG",
     "Flow",
+    # Functional API
+    "Layer",
+    "AppliedTask",
+    "FunctionalFlow",
     # State management
     "StateManager",
     "TaskCache",
